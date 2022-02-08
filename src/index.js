@@ -16,9 +16,8 @@ function checksExistsUserAccount(request, response, next) {
   const user = users.find(element => element.username === username);
 
   if (!user) {
-    response.status(404);
-    return response.send({
-      "error": "Usuário não encontrado!"
+    return response.status(404).json({
+      error: "Usuário não encontrado!"
     });
   }
 
@@ -33,9 +32,8 @@ app.post('/users', (request, response) => {
   const user = users.find(element => element.username === username);
 
   if (user) {
-    response.status(400);
-    return response.send({
-      "error": `Usuário ${username} já existe!`
+    return response.status(400).json({
+      error: `Usuário ${username} já existe!`
     });
   }
 
@@ -46,14 +44,13 @@ app.post('/users', (request, response) => {
     todos: []
   });
 
-  response.status(201);
-  return response.send(users[users.length - 1]);
+  return response.status(201).json(users[users.length - 1]);
 });
 
 app.get('/todos', checksExistsUserAccount, (request, response) => {
   const { user } = request;
 
-  return response.send(user.todos);
+  return response.json(user.todos);
 });
 
 app.post('/todos', checksExistsUserAccount, (request, response) => {
@@ -68,8 +65,7 @@ app.post('/todos', checksExistsUserAccount, (request, response) => {
     created_at: new Date()
   });
 
-  response.status(201);
-  return response.send(user.todos[user.todos.length - 1]);
+  return response.status(201).json(user.todos[user.todos.length - 1]);
 });
 
 app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
@@ -79,19 +75,16 @@ app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
 
   const todo = user.todos.find(element => element.id === id);
 
-  console.log(todo);
-
   if (todo) {
     todo.title = title;
     todo.deadline = new Date(deadline);
   } else {
-    response.status(404);
-    return response.send({
-      "error": `Todo ${id} não encontrado!`
+    return response.status(404).json({
+      error: `Todo ${id} não encontrado!`
     });
   }
 
-  return response.send();
+  return response.json(todo);
 });
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
@@ -103,13 +96,12 @@ app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
   if (todo) {
     todo.done = true;
   } else {
-    response.status(404);
-    return response.send({
-      "error": `Todo ${id} não encontrado!`
+    return response.status(404).json({
+      error: `Todo ${id} não encontrado!`
     });
   }
 
-  return response.send();
+  return response.json(todo);
 });
 
 app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
@@ -125,20 +117,15 @@ app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
     }
   });
 
-  console.log(arrayIndex);
-
   if (arrayIndex !== null) {
     user.todos.splice(arrayIndex, 1);
-  
-    response.status(204);
   } else {
-    response.status(404);
-    return response.send({
-      "error": `Todo ${id} não encontrado!`
+    return response.status(404).json({
+      error: `Todo ${id} não encontrado!`
     })
   }
 
-  return response.send();
+  return response.status(204).json();
 });
 
 module.exports = app;
