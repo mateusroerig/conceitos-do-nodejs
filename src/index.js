@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 
 const { v4: uuidv4 } = require('uuid');
-const { send } = require('express/lib/response');
 
 const app = express();
 
@@ -17,9 +16,9 @@ function checksExistsUserAccount(request, response, next) {
   const user = users.find(element => element.username === username);
 
   if (!user) {
-    response.status(400);
+    response.status(404);
     return response.send({
-      "message": "Usuário não encontrado!"
+      "error": "Usuário não encontrado!"
     });
   }
 
@@ -31,6 +30,15 @@ function checksExistsUserAccount(request, response, next) {
 app.post('/users', (request, response) => {
   const { name, username } = request.body;
 
+  const user = users.find(element => element.username === username);
+
+  if (user) {
+    response.status(400);
+    return response.send({
+      "error": `Usuário ${username} já existe!`
+    });
+  }
+
   users.push({ 
     id: uuidv4(), 
     name, 
@@ -38,6 +46,7 @@ app.post('/users', (request, response) => {
     todos: []
   });
 
+  response.status(201);
   return response.send(users[users.length - 1]);
 });
 
@@ -59,8 +68,7 @@ app.post('/todos', checksExistsUserAccount, (request, response) => {
     created_at: new Date()
   });
 
-  console.log(user.todos[0]);
-
+  response.status(201);
   return response.send(user.todos[user.todos.length - 1]);
 });
 
@@ -69,37 +77,68 @@ app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
   const { title, deadline } = request.body;
   const { id } = request.params;
 
-  user.todos.find(element => {
-    if (element.id === id) {
-      element.title = title;
-      element.deadline = new Date(deadline)
-      return;
-    }
-  });
+  const todo = user.todos.find(element => element.id === id);
 
-  return response.send({
-    "message": `Todo ${id} atualizado!`
-  })
+  console.log(todo);
+
+  if (todo) {
+    todo.title = title;
+    todo.deadline = new Date(deadline);
+  } else {
+    response.status(404);
+    return response.send({
+      "error": `Todo ${id} não encontrado!`
+    });
+  }
+
+  return response.send();
 });
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
   const { user } = request;
   const { id } = request.params;
 
-  user.todos.find(element => {
+  const todo = user.todos.find(element => element.id === id);
+
+  if (todo) {
+    todo.done = true;
+  } else {
+    response.status(404);
+    return response.send({
+      "error": `Todo ${id} não encontrado!`
+    });
+  }
+
+  return response.send();
+});
+
+app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
+  const { user } = request;
+  const { id } = request.params;
+
+  let arrayIndex = null;
+
+  user.todos.findIndex((element, index) => {
     if (element.id === id) {
-      element.done = true;
+      arrayIndex = index;
       return;
     }
   });
 
-  return response.send({
-    "message": `Todo ${id} concluído!`
-  })
-});
+  console.log(arrayIndex);
 
-app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  if (arrayIndex !== null) {
+    user.todos.splice(arrayIndex, 1);
+  
+    response.status(204);
+  } else {
+    response.status(404);
+    return response.send({
+      "error": `Todo ${id} não encontrado!`
+    })
+  }
+
+  return response.send();
 });
 
 module.exports = app;
